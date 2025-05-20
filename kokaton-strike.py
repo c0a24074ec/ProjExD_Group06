@@ -14,7 +14,7 @@ GREEN = (0, 200, 0)
 BLACK = (0, 0, 0)
 
 # 画像読み込み・リサイズ
-player_img = pygame.image.load("ex5/0.png").convert_alpha()  # 画像パスは環境に合わせて
+player_img = pygame.image.load("ex5/fig/0.png").convert_alpha()  # 画像パスは環境に合わせて
 default_img = pygame.transform.scale(player_img, (40, 40))
 
 # プレイヤー
