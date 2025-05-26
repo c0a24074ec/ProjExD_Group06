@@ -14,8 +14,30 @@ GREEN = (0, 200, 0)
 BLACK = (0, 0, 0)
 
 # 画像読み込み・リサイズ
-player_img = pygame.image.load("ex5/fig/0.png").convert_alpha()  # 画像パスは環境に合わせて
+player_img = pygame.image.load("ex5/0.png").convert_alpha()  # 画像パスは環境に合わせて
 default_img = pygame.transform.scale(player_img, (40, 40))
+
+class HPBar:
+    def __init__(self, max_hp):
+        self.max_hp = max_hp
+        self.hp = max_hp
+        self.width = 40
+        self.height = 6
+
+    def draw(self, screen, center_pos, enemy_radius):
+        hp_ratio = self.hp / self.max_hp
+        bar_x = center_pos[0] - self.width // 2
+        bar_y = center_pos[1] + enemy_radius + 5
+
+        # 背景（灰色）とHPバー（緑）
+        pygame.draw.rect(screen, (150, 150, 150), (bar_x, bar_y, self.width, self.height))
+        pygame.draw.rect(screen, GREEN, (bar_x, bar_y, int(self.width * hp_ratio), self.height))
+
+    def take_damage(self, amount=1):
+        self.hp = max(0, self.hp - amount)
+
+    def is_dead(self):
+        return self.hp <= 0
 
 # プレイヤー
 player_pos = [150, 300]
@@ -23,7 +45,8 @@ player_radius = 20
 player_vel = [0, 0]
 dragging = False
 launched = False
-
+hit_enemies=set()
+player_hp = HPBar(10)
 # 敵（赤玉）
 enemy_radius = 25
 enemies = []
@@ -33,10 +56,16 @@ enemy_spawn_delay = 90
 
 FRICTION = 0.98
 FONT = pygame.font.SysFont(None, 36)
+attack_font=pygame.font.SysFont("MS Gothic",48,bold=True)
 
 score = 0  # スコア変数追加
 
+action_count=0 # プレイヤーの行動回数
+enemy_attack_interval=3 # 何回行動したら攻撃されるか
+
 def distance(p1, p2):
+    if isinstance(p2, dict):  
+        p2 = p2["pos"]
     return math.hypot(p1[0] - p2[0], p1[1] - p2[1])
 
 def keep_player_in_screen():
@@ -59,8 +88,8 @@ def draw():
 
     # 敵を描画
     for e in enemies:
-        pygame.draw.circle(screen, RED, e, enemy_radius)
-
+        pygame.draw.circle(screen, RED, e["pos"], enemy_radius)
+        e["hp_obj"].draw(screen, e["pos"], enemy_radius)
     # 引っ張り線
     if dragging:
         pygame.draw.line(screen, GREEN, player_pos, pygame.mouse.get_pos(), 3)
@@ -68,12 +97,14 @@ def draw():
     # プレイヤー画像を描画
     rect = default_img.get_rect(center=(int(player_pos[0]), int(player_pos[1])))
     screen.blit(default_img, rect)
+    player_hp.draw(screen, player_pos, player_radius)
 
     # スコア表示
     score_surf = FONT.render(f"Score: {score}", True, BLACK)
     screen.blit(score_surf, (20, 20))
 
     pygame.display.flip()
+
 
 running = True
 while running:
@@ -84,7 +115,10 @@ while running:
     if enemy_spawn_timer >= enemy_spawn_delay and len(enemies) < max_enemies:
         x = random.randint(WIDTH // 2, WIDTH - enemy_radius)
         y = random.randint(enemy_radius, HEIGHT - enemy_radius)
-        enemies.append([x, y])
+        enemies.append({
+            "pos":[x,y],
+            "hp_obj":HPBar(3)
+        })
         enemy_spawn_timer = 0
 
     for event in pygame.event.get():
@@ -117,13 +151,30 @@ while running:
 
         # 敵に当たったら敵を消してスコアを増やす
         for e in enemies[:]:
-            if distance(player_pos, e) <= player_radius + enemy_radius:
-                enemies.remove(e)
-                score += 1  # スコア加算
+            enemy_id=id(e)
+            if enemy_id not in hit_enemies and distance(player_pos, e) <= player_radius + enemy_radius:
+                hit_enemies.add(enemy_id)
+                e["hp_obj"].take_damage()
+                if e["hp_obj"].is_dead():
+                    enemies.remove(e)
+                    score += 1
 
         if math.hypot(player_vel[0], player_vel[1]) < 0.5:
             launched = False
             player_vel = [0, 0]
+            hit_enemies.clear()
+
+            action_count += 1
+
+            # 行動回数が一定に達したら敵の攻撃
+            if action_count >= enemy_attack_interval:
+                attack_text=attack_font.render("敵の攻撃！",True,RED)
+                screen.blit(attack_text,(WIDTH//2-attack_text.get_width()//2,HEIGHT//2-24))
+                pygame.display.flip()
+                pygame.time.wait(1000) # 1秒表示
+
+                player_hp.take_damage(2)
+                action_count=0
 
     draw()
 
