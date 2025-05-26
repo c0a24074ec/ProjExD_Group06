@@ -19,7 +19,7 @@ class SoundManager():
     """
     def __init__(self):
         """
-        BGM、効果音を初期化しBGMをループ
+        BGM、効果音を初期化しBGMをループする
         """
         pygame.mixer.init()
         pygame.mixer.music.load("ex5/sounds/maou_bgm.mp3")  # BGMの設定
