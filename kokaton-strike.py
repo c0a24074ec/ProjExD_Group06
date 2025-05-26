@@ -13,6 +13,40 @@ RED = (255, 0, 0)
 GREEN = (0, 200, 0)
 BLACK = (0, 0, 0)
 
+class SoundManager():
+    """
+    ゲーム内のBGMや効果音の再生を管理するクラス
+    """
+    def __init__(self):
+        """
+        BGM、効果音を初期化しBGMをループ
+        """
+        pygame.mixer.init()
+        pygame.mixer.music.load("ex5/sounds/maou_bgm.mp3")  # BGMの設定
+        pygame.mixer.music.set_volume(0.2)  # 音量20%
+        pygame.mixer.music.play(-1)  # ループ再生
+
+        self.launch_sound = pygame.mixer.Sound("ex5/sounds/maou_launch.wav") # 発射音の設定
+        self.launch_sound.set_volume(0.5)  # 発射音の音量設定(50&)
+
+        self.hit_sound = pygame.mixer.Sound("ex5/sounds/maou_hit.wav") # 敵に当たった時の効果音の設定の設定
+        self.hit_sound.set_volume(0.5)  # 敵ヒット音の音量設定(50%)
+
+        self.wall_hit_sound = pygame.mixer.Sound("ex5/sounds/maou_wall.wav") # 壁にぶつかったときの効果音の設定
+        self.wall_hit_sound.set_volume(0.7)  # 壁ヒット音の音量設定(70%)
+
+    def play_launch(self): # 発射時の効果音を再生する
+        self.launch_sound.play()
+
+    def play_hit(self): # 敵に命中した時の効果音を再生する
+        self.hit_sound.play()
+
+    def play_wall_hit(self): # 壁にぶつかったときの効果音を再生する
+        self.wall_hit_sound.play()
+
+# SoundManagerのインスタンス化
+sound_manager = SoundManager()
+
 # 画像読み込み・リサイズ
 player_img = pygame.image.load("ex5/fig/0.png").convert_alpha()  # 画像パスは環境に合わせて
 default_img = pygame.transform.scale(player_img, (40, 40))
@@ -40,19 +74,30 @@ def distance(p1, p2):
     return math.hypot(p1[0] - p2[0], p1[1] - p2[1])
 
 def keep_player_in_screen():
+    hit = False # 最初は壁にぶつかっていない
     if player_pos[0] - player_radius < 0:
         player_pos[0] = player_radius
         player_vel[0] *= -1
+        hit = True # 壁にぶつかったことを記録
     elif player_pos[0] + player_radius > WIDTH:
         player_pos[0] = WIDTH - player_radius
         player_vel[0] *= -1
+        hit = True # 壁にぶつかったことを記録
 
     if player_pos[1] - player_radius < 0:
         player_pos[1] = player_radius
         player_vel[1] *= -1
+        hit = True # 壁にぶつかったことを記録
     elif player_pos[1] + player_radius > HEIGHT:
         player_pos[1] = HEIGHT - player_radius
         player_vel[1] *= -1
+        hit = True # 壁にぶつかったことを記録
+
+    # 壁に当たったら効果音を鳴らす(Trueだったら鳴らす)
+    if hit:
+        sound_manager.play_wall_hit()
+
+    return hit # 当たったかどうかを返す
 
 def draw():
     screen.fill(WHITE)
@@ -104,6 +149,7 @@ while running:
             player_vel = [dx / 5, dy / 5]
             dragging = False
             launched = True
+            sound_manager.play_launch() #発射したときの効果音を鳴らす
 
     # プレイヤー移動
     if launched:
@@ -120,6 +166,7 @@ while running:
             if distance(player_pos, e) <= player_radius + enemy_radius:
                 enemies.remove(e)
                 score += 1  # スコア加算
+                sound_manager.play_hit() #敵に当たったときの効果音を鳴らす
 
         if math.hypot(player_vel[0], player_vel[1]) < 0.5:
             launched = False
