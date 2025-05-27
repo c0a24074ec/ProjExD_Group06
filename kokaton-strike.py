@@ -19,15 +19,15 @@ default_img = pygame.transform.scale(player_img, (40, 40))
 
 class HPBar:
     def __init__(self, max_hp):
-        self.max_hp = max_hp
-        self.hp = max_hp
-        self.width = 40
-        self.height = 6
+        self.max_hp = max_hp  
+        self.hp = max_hp    # 現在のHPを初期化
+        self.width = 40    # HPバーの横幅（ピクセル）
+        self.height = 6    # HPバーの高さ（ピクセル）
 
     def draw(self, screen, center_pos, enemy_radius):
-        hp_ratio = self.hp / self.max_hp
-        bar_x = center_pos[0] - self.width // 2
-        bar_y = center_pos[1] + enemy_radius + 5
+        hp_ratio = self.hp / self.max_hp   # 現在のHPの割合（0.0〜1.0）
+        bar_x = center_pos[0] - self.width // 2   # HPバーの左端X座標
+        bar_y = center_pos[1] + enemy_radius + 5   # HPバーのY座標
 
         # 背景（灰色）とHPバー（緑）
         pygame.draw.rect(screen, (150, 150, 150), (bar_x, bar_y, self.width, self.height))
