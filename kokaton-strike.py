@@ -22,17 +22,17 @@ class SoundManager():
         BGM、効果音を初期化しBGMをループする
         """
         pygame.mixer.init()
-        pygame.mixer.music.load("ex5/sounds/maou_bgm.mp3")  # BGMの設定
+        pygame.mixer.music.load("sounds/maou_bgm.mp3")  # BGMの設定
         pygame.mixer.music.set_volume(0.2)  # 音量20%
         pygame.mixer.music.play(-1)  # ループ再生
 
-        self.launch_sound = pygame.mixer.Sound("ex5/sounds/maou_launch.wav") # 発射音の設定
+        self.launch_sound = pygame.mixer.Sound("sounds/maou_launch.wav") # 発射音の設定
         self.launch_sound.set_volume(0.5)  # 発射音の音量設定(50&)
 
-        self.hit_sound = pygame.mixer.Sound("ex5/sounds/maou_hit.wav") # 敵に当たった時の効果音の設定の設定
+        self.hit_sound = pygame.mixer.Sound("sounds/maou_hit.wav") # 敵に当たった時の効果音の設定の設定
         self.hit_sound.set_volume(0.5)  # 敵ヒット音の音量設定(50%)
 
-        self.wall_hit_sound = pygame.mixer.Sound("ex5/sounds/maou_wall.wav") # 壁にぶつかったときの効果音の設定
+        self.wall_hit_sound = pygame.mixer.Sound("sounds/maou_wall.wav") # 壁にぶつかったときの効果音の設定
         self.wall_hit_sound.set_volume(0.7)  # 壁ヒット音の音量設定(70%)
 
     def play_launch(self): # 発射時の効果音を再生する
@@ -48,7 +48,7 @@ class SoundManager():
 sound_manager = SoundManager()
 
 # 画像読み込み・リサイズ
-player_img = pygame.image.load("ex5/fig/0.png").convert_alpha()  # 画像パスは環境に合わせて
+player_img = pygame.image.load("fig/0.png").convert_alpha()  # 画像パスは環境に合わせて
 default_img = pygame.transform.scale(player_img, (40, 40))
 
 # プレイヤー
