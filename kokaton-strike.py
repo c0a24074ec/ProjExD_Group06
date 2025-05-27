@@ -17,7 +17,7 @@ BLACK = (0, 0, 0)
 player_img = pygame.image.load("ex5/ex5/fig/0.png").convert_alpha()
 default_img = pygame.transform.scale(player_img, (40, 40))
 
-explosion_img = pygame.image.load("ex5/ex5/fig/bakuha.png").convert_alpha()
+explosion_img = pygame.image.load("ex5/ex5/fig/explosion.gif").convert_alpha()
 explosion_img = pygame.transform.scale(explosion_img, (500, 500))
 
 player_pos = [150, 300]
@@ -33,7 +33,7 @@ enemy_spawn_timer = 0
 enemy_spawn_delay = 90
 
 FRICTION = 0.98
-FONT = pygame.font.SysFont(None, 36)
+FONT = pygame.font.SysFont(None, 72)  # 大きなフォント
 score = 0
 
 hamehameha_active = False
@@ -83,15 +83,19 @@ def draw():
     rect = default_img.get_rect(center=(int(player_pos[0]), int(player_pos[1])))
     screen.blit(default_img, rect)
 
-    score_surf = FONT.render(f"Score: {score}", True, BLACK)
+    score_surf = pygame.font.SysFont(None, 36).render(f"Score: {score}", True, BLACK)
     screen.blit(score_surf, (20, 20))
 
-    if hamehameha_active:
-        text = FONT.render("Skill!", True, RED)
-        screen.blit(text, (WIDTH // 2 - 60, HEIGHT // 2 - 30))
-
+    # 爆発描画（DOKKA-Nより後）
     explosions.draw(screen)
     explosions.update()
+
+    # 一番手前に文字
+    if hamehameha_active:
+        text = FONT.render("DOKKA-N", True, RED)
+        text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+        screen.blit(text, text_rect)
+
     pygame.display.flip()
 
 running = True
@@ -123,13 +127,12 @@ while running:
             launched = True
 
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE and not hamehameha_active:
+            if event.key == pygame.K_SPACE and not hamehameha_active and score >= 5:
                 hamehameha_active = True
                 hame_timer = 30
-                # 中心に爆発（サイズ500）
                 explosions.add(Explosion(player_pos[:], explosion_img))
                 enemies.clear()
-                score += 5  # 全滅ボーナス
+                score -= 5 # スコアを消費してスキル発動
 
     if hamehameha_active:
         hame_timer -= 1
@@ -154,4 +157,4 @@ while running:
 
     draw()
 
-pygame.quit()
+pygame.quit() 
