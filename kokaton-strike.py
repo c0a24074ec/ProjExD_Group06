@@ -54,7 +54,7 @@ sound_manager = SoundManager()
 # 画像読み込み・リサイズ
 player_img = pygame.image.load("fig/0.png").convert_alpha()  # 画像パスは環境に合わせて
 default_img = pygame.transform.scale(player_img, (40, 40))
-bg_img = pygame.image.load("ex5/fig/222_bg.jpg").convert_alpha()
+bg_img = pygame.image.load("fig/222_bg.png").convert_alpha()
 
 class HPBar:
     def __init__(self, max_hp):
@@ -103,7 +103,7 @@ action_count=0 # プレイヤーの行動回数
 enemy_attack_interval=3 # 何回行動したら攻撃されるか
 
 def distance(p1, p2):
-    if isinstance(p2, dict):  
+    if isinstance(p2, dict)and "pos" in p2:  
         p2 = p2["pos"]
     return math.hypot(p1[0] - p2[0], p1[1] - p2[1])
 
@@ -127,23 +127,22 @@ def keep_player_in_screen():
         player_vel[1] *= -1
         hit = True # 壁にぶつかったことを記録
 
-def draw():
-    screen.blit(bg_img ,(0,0))
-=======
-    # 壁に当たったら効果音を鳴らす(Trueだったら鳴らす)
+# 壁に当たったら効果音を鳴らす(Trueだったら鳴らす)
     if hit:
-        sound_manager.play_wall_hit()
+        sound_manager.play_wall_hit() 
 
     return hit # 当たったかどうかを返す
 
 def draw():
-    screen.fill(WHITE)
+    screen.blit(bg_img,(0,0))
     # 引っ張り線
     if dragging:
         pygame.draw.line(screen, GREEN, player_pos, pygame.mouse.get_pos(), 3)
-    if score >= 10:
+    if player_hp.is_dead():
         show_game_over()
-        running = False
+        pygame.quit()
+        exit()
+
 
     # 画像を描画
     rect = default_img.get_rect(center=(int(player_pos[0]), int(player_pos[1])))
@@ -216,10 +215,11 @@ class Enemy(): #敵クラス
         self.img=pygame.image.load(f"fig/enemy1.png") #敵の画像を読み込む
         self.img = pygame.transform.scale(self.img, (80, 71 )) #敵画像のサイズ変更
     def fire_p(self, enemy):
-        angle = random.uniform(0, 2 * math.pi) #ランダムの角度を取得
-        vx = math.cos(angle) * 5 #x方向の速度
-        vy = math.sin(angle) * 5 #y方向の速度
-        self.p.append({'pos': list(enemy),  'vel': [vx, vy] })
+        for _ in range(10):
+            angle = random.uniform(0, 2 * math.pi) #ランダムの角度を取得
+            vx = math.cos(angle) * 5 #x方向の速度
+            vy = math.sin(angle) * 5 #y方向の速度
+            self.p.append({'pos': list(enemy),  'vel': [vx, vy] })
     def fire_all(self):
         for e in self.enemies:
             self.fire_p(e)
@@ -230,7 +230,7 @@ class Enemy(): #敵クラス
         if self.spawn_timer >= self.spawn_delay and len(self.enemies) < self.max_enemies:
             x = random.randint(WIDTH // 2, WIDTH - self.radius)# 敵のx座標
             y = random.randint(self.radius, HEIGHT - self.radius)# 敵のy座標
-            self.enemies.append([x, y,5]) # 新しい敵を追加。初期体力は5
+            self.enemies.append([x, y,5,HPBar(5)]) # 新しい敵を追加。初期体力は5
             self.spawn_timer = 0
 
         for b in self.p:
@@ -240,27 +240,27 @@ class Enemy(): #敵クラス
         self.p = [b for b in self.p if 0 <= b['pos'][0] <= WIDTH and 0 <= b['pos'][1] <= HEIGHT]
 
     def draw(self):
-        for pos in self.enemies:
-            hp_bar = HPBar(5)
-            hp_bar.hp = pos[2]  # 現在のHP（リストの3番目の要素）
-            hp_bar.draw(screen, (pos[0], pos[1]), self.radius)
-
-            rect = self.img.get_rect(center=(pos[0], pos[1]))
-             # すべての弾を赤い円で描画
-            for b in self.p:
-                pygame.draw.circle(screen, RED, (int(b['pos'][0]), int(b['pos'][1])), 5)
-            screen.blit(self.img, rect)
+       
+       for e in self.enemies:
+           x, y, hp, hp_bar = e
+           hp_bar.hp = hp  # 各敵専用のHPBarに現在HPをセット
+           hp_bar.draw(screen, (x, y), self.radius)
+           rect = self.img.get_rect(center=(x, y))
+           screen.blit(self.img, rect)
+       for b in self.p:
+           pygame.draw.circle(screen, RED, (int(b['pos'][0]), int(b['pos'][1])), 5)
+            
 
     def check_collision(self, player_pos, player_radius):
         global score
-        for e in self.enemies:
-           dist = distance(player_pos, e) # プレイヤーと敵の距離を計算
-           if dist <= player_radius + self.radius:
-            e[2] -= 1  # 体力を1減らす
-            if e[2] <= 0:
-                self.enemies.remove(e)  # 体力がなくなったら敵を消す
-                score += 1             # スコア＋１
-                sound_manager.play_hit() #敵に当たったときの効果音を鳴らす
+        for e in self.enemies[:]:
+            x, y, hp, hp_bar = e
+            if distance(player_pos, (x, y)) <= player_radius + self.radius:
+                e[2] -= 1  # HPを減らす
+                if e[2] <= 0:
+                    self.enemies.remove(e)
+                    score += 1
+                    sound_manager.play_hit()
 
 running = True
 enemy=Enemy()
@@ -308,18 +308,20 @@ while running:
 
         # 敵に当たったら敵を消してスコアを増やす
         for e in enemies[:]:
-            enemy_id=id(e)
-            if enemy_id not in hit_enemies and distance(player_pos, e) <= player_radius + enemy_radius:
+            enemy_id = id(e)
+            if enemy_id not in hit_enemies and distance(player_pos, e["pos"]) <= player_radius + enemy_radius:
                 hit_enemies.add(enemy_id)
                 e["hp_obj"].take_damage()
                 if e["hp_obj"].is_dead():
                     enemies.remove(e)
                     score += 1
+
+        # プレイヤーに弾が当たったか
         for b in enemy.p[:]:
             if distance(player_pos, b['pos']) <= player_radius + 5:
                 player_hp.take_damage(1)
                 enemy.p.remove(b)
-
+        # プレイヤーの動きがほぼ止まったらターン終了
         if math.hypot(player_vel[0], player_vel[1]) < 0.5:
             launched = False
             player_vel = [0, 0]
@@ -327,14 +329,13 @@ while running:
 
             action_count += 1
 
-            # 行動回数が一定に達したら敵の攻撃
             if action_count >= enemy_attack_interval:
-                attack_text=attack_font.render("敵の攻撃！",True,RED)
-                screen.blit(attack_text,(WIDTH//2-attack_text.get_width()//2,HEIGHT//2-24))
+                attack_text = attack_font.render("敵の攻撃！", True, RED)
+                screen.blit(attack_text, (WIDTH // 2 - attack_text.get_width() // 2, HEIGHT // 2 - 24))
                 pygame.display.flip()
-                pygame.time.wait(1000) # 1秒表示
+                pygame.time.wait(1000)  # 1秒表示
                 enemy.fire_all()
-                action_count=0
+                action_count = 0
 
     draw()
 
