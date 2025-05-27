@@ -130,11 +130,6 @@ def keep_player_in_screen():
 
 def draw():
     screen.fill(WHITE)
-
-    # 敵を描画
-    for e in enemies:
-        pygame.draw.circle(screen, RED, e["pos"], enemy_radius)
-        e["hp_obj"].draw(screen, e["pos"], enemy_radius)
     # 引っ張り線
     if dragging:
         pygame.draw.line(screen, GREEN, player_pos, pygame.mouse.get_pos(), 3)
@@ -161,14 +156,15 @@ class Enemy(): #敵クラス
         self.radius=20 #敵キャラの当たり判定
         self.img=pygame.image.load(f"fig/enemy1.png") #敵の画像を読み込む
         self.img = pygame.transform.scale(self.img, (80, 71 )) #敵画像のサイズ変更
-        self.shoot_timer = 0 #弾タイマーのカウンター
-        self.shoot_delay = 60  #弾を発射する間隔
-
     def fire_p(self, enemy):
         angle = random.uniform(0, 2 * math.pi) #ランダムの角度を取得
         vx = math.cos(angle) * 5 #x方向の速度
         vy = math.sin(angle) * 5 #y方向の速度
         self.p.append({'pos': list(enemy),  'vel': [vx, vy] })
+    def fire_all(self):
+        for e in self.enemies:
+            self.fire_p(e)
+
 
     def update(self):
         self.spawn_timer += 1
@@ -178,12 +174,6 @@ class Enemy(): #敵クラス
             self.enemies.append([x, y,5]) # 新しい敵を追加。初期体力は5
             self.spawn_timer = 0
 
-        self.shoot_timer += 1
-        if self.shoot_timer >= self.shoot_delay: 
-            for e in self.enemies:
-                self.fire_p(e)
-            self.shoot_timer = 0
-
         for b in self.p:
             b['pos'][0] += b['vel'][0]# x座標更新
             b['pos'][1] += b['vel'][1]# y座標更新
@@ -192,6 +182,10 @@ class Enemy(): #敵クラス
 
     def draw(self):
         for pos in self.enemies:
+            hp_bar = HPBar(5)
+            hp_bar.hp = pos[2]  # 現在のHP（リストの3番目の要素）
+            hp_bar.draw(screen, (pos[0], pos[1]), self.radius)
+
             rect = self.img.get_rect(center=(pos[0], pos[1]))
              # すべての弾を赤い円で描画
             for b in self.p:
@@ -262,6 +256,10 @@ while running:
                 if e["hp_obj"].is_dead():
                     enemies.remove(e)
                     score += 1
+        for b in enemy.p[:]:
+            if distance(player_pos, b['pos']) <= player_radius + 5:
+                player_hp.take_damage(1)
+                enemy.p.remove(b)
 
         if math.hypot(player_vel[0], player_vel[1]) < 0.5:
             launched = False
@@ -276,8 +274,7 @@ while running:
                 screen.blit(attack_text,(WIDTH//2-attack_text.get_width()//2,HEIGHT//2-24))
                 pygame.display.flip()
                 pygame.time.wait(1000) # 1秒表示
-
-                player_hp.take_damage(2)
+                enemy.fire_all()
                 action_count=0
 
     draw()
