@@ -165,7 +165,8 @@ class Enemy(): #敵クラス
             e[2] -= 1  # 体力を1減らす
             if e[2] <= 0:
                 self.enemies.remove(e)  # 体力がなくなったら敵を消す
-                score += 1             # スコ＋１
+                score += 1             # スコア＋１
+                sound_manager.play_hit() #敵に当たったときの効果音を鳴らす
 
 running = True
 enemy=Enemy()
