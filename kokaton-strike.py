@@ -1,6 +1,7 @@
 import pygame
 import math
 import random
+import time
 
 pygame.init()
 WIDTH, HEIGHT = 800, 600
@@ -13,9 +14,16 @@ RED = (255, 0, 0)
 GREEN = (0, 200, 0)
 BLACK = (0, 0, 0)
 
+FONT = pygame.font.SysFont(None, 36)
+FONT_JP = pygame.font.SysFont("meiryo", 80)
+FONT_JP_SMALL = pygame.font.SysFont("meiryo", 40)
+
 # 画像読み込み・リサイズ
 player_img = pygame.image.load("ex5/fig/0.png").convert_alpha()  # 画像パスは環境に合わせて
 default_img = pygame.transform.scale(player_img, (40, 40))
+crying_img = pygame.image.load("ex5/fig/8.png").convert_alpha()
+crying_img = pygame.transform.scale(crying_img, (40, 40))
+bg_img = pygame.image.load("ex5/fig/222_bg.jpg").convert_alpha()
 
 # プレイヤー
 player_pos = [150, 300]
@@ -55,7 +63,7 @@ def keep_player_in_screen():
         player_vel[1] *= -1
 
 def draw():
-    screen.fill(WHITE)
+    screen.blit(bg_img ,(0,0))
 
     # 敵を描画
     for e in enemies:
@@ -64,6 +72,9 @@ def draw():
     # 引っ張り線
     if dragging:
         pygame.draw.line(screen, GREEN, player_pos, pygame.mouse.get_pos(), 3)
+    if score >= 10:
+        show_game_over()
+        running = False
 
     # プレイヤー画像を描画
     rect = default_img.get_rect(center=(int(player_pos[0]), int(player_pos[1])))
@@ -73,7 +84,56 @@ def draw():
     score_surf = FONT.render(f"Score: {score}", True, BLACK)
     screen.blit(score_surf, (20, 20))
 
+    score_text = f"Score: {score}"
+    score_surf = FONT.render(score_text, True, BLACK)
+    score_rect = score_surf.get_rect(topleft=(20, 20))
+
+    bg_rect = score_rect.inflate(10, 10)
+    pygame.draw.rect(screen, WHITE, bg_rect)
+
+    screen.blit(score_surf,score_rect)
+
     pygame.display.flip()
+
+
+def show_game_over():
+    blackout = pygame.Surface((WIDTH, HEIGHT))
+    blackout.fill((0, 0, 0))
+    blackout.set_alpha(180)
+    screen.blit(blackout, (0, 0))
+
+    text_surface = FONT_JP.render("ゲームオーバー", True, (255, 0, 0))  
+    text_rect = text_surface.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+    screen.blit(text_surface, text_rect)
+
+    pygame.display.update()
+    time.sleep(5)
+
+
+def show_start_screen():
+    screen.fill(BLACK)
+
+    title_surface = FONT_JP.render("ゲームスタート", True, WHITE)
+    title_rect = title_surface.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 50))
+    screen.blit(title_surface, title_rect)
+
+    start_surface = FONT_JP_SMALL.render("クリックしてスタート", True, WHITE)
+    start_rect = start_surface.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 50))
+    screen.blit(start_surface, start_rect)
+
+    pygame.display.update()
+
+    waiting = True
+    while waiting:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                waiting = False
+
+# まず開始画面を表示
+show_start_screen()
 
 running = True
 while running:
