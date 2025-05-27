@@ -1,6 +1,7 @@
 import pygame 
 import math
 import random
+import time
 
 pygame.init()
 WIDTH, HEIGHT = 800, 600
@@ -13,6 +14,9 @@ RED = (255, 0, 0)
 GREEN = (0, 200, 0)
 BLACK = (0, 0, 0)
 
+FONT = pygame.font.SysFont(None, 36)
+FONT_JP = pygame.font.SysFont("meiryo", 80)
+FONT_JP_SMALL = pygame.font.SysFont("meiryo", 40)
 class SoundManager():
     """
     ゲーム内のBGMや効果音の再生を管理するクラス
@@ -50,6 +54,7 @@ sound_manager = SoundManager()
 # 画像読み込み・リサイズ
 player_img = pygame.image.load("fig/0.png").convert_alpha()  # 画像パスは環境に合わせて
 default_img = pygame.transform.scale(player_img, (40, 40))
+bg_img = pygame.image.load("ex5/fig/222_bg.jpg").convert_alpha()
 
 class HPBar:
     def __init__(self, max_hp):
@@ -122,6 +127,9 @@ def keep_player_in_screen():
         player_vel[1] *= -1
         hit = True # 壁にぶつかったことを記録
 
+def draw():
+    screen.blit(bg_img ,(0,0))
+=======
     # 壁に当たったら効果音を鳴らす(Trueだったら鳴らす)
     if hit:
         sound_manager.play_wall_hit()
@@ -133,6 +141,9 @@ def draw():
     # 引っ張り線
     if dragging:
         pygame.draw.line(screen, GREEN, player_pos, pygame.mouse.get_pos(), 3)
+    if score >= 10:
+        show_game_over()
+        running = False
 
     # 画像を描画
     rect = default_img.get_rect(center=(int(player_pos[0]), int(player_pos[1])))
@@ -144,8 +155,56 @@ def draw():
     score_surf = FONT.render(f"Score: {score}", True, BLACK)
     screen.blit(score_surf, (20, 20))
 
+    score_text = f"Score: {score}"
+    score_surf = FONT.render(score_text, True, BLACK)
+    score_rect = score_surf.get_rect(topleft=(20, 20))
+
+    bg_rect = score_rect.inflate(10, 10)
+    pygame.draw.rect(screen, WHITE, bg_rect)
+
+    screen.blit(score_surf,score_rect)
+
     pygame.display.flip()
 
+
+def show_game_over():
+    blackout = pygame.Surface((WIDTH, HEIGHT))
+    blackout.fill((0, 0, 0))
+    blackout.set_alpha(180)
+    screen.blit(blackout, (0, 0))
+
+    text_surface = FONT_JP.render("ゲームオーバー", True, (255, 0, 0))  
+    text_rect = text_surface.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+    screen.blit(text_surface, text_rect)
+
+    pygame.display.update()
+    time.sleep(5)
+
+
+def show_start_screen():
+    screen.fill(BLACK)
+
+    title_surface = FONT_JP.render("ゲームスタート", True, WHITE)
+    title_rect = title_surface.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 50))
+    screen.blit(title_surface, title_rect)
+
+    start_surface = FONT_JP_SMALL.render("クリックしてスタート", True, WHITE)
+    start_rect = start_surface.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 50))
+    screen.blit(start_surface, start_rect)
+
+    pygame.display.update()
+
+    waiting = True
+    while waiting:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                waiting = False
+
+# まず開始画面を表示
+show_start_screen()
 class Enemy(): #敵クラス
     def __init__(self):
         self.enemies=[] #敵の位置情報リスト
