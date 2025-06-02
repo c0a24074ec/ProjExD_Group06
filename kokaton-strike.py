@@ -306,9 +306,14 @@ while running:
                 score -= 5
 
     if hamehameha_active:
-        hame_timer -= 1
+        hame_timer -= 1 
         if hame_timer <= 0:
             hamehameha_active = False
+    
+    for b in enemy.p[:]:
+        if distance(player_pos, b['pos']) <= player_radius + 5:
+            player_hp.take_damage(1)
+            enemy.p.remove(b)
 
     if launched:
         player_pos[0] += player_vel[0]
