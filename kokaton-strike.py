@@ -78,7 +78,9 @@ class HPBar:
     def is_dead(self):
         return self.hp <= 0
 
-# プレイヤー
+explosion_img = pygame.image.load("fig/explosion.gif").convert_alpha()
+explosion_img = pygame.transform.scale(explosion_img, (500, 500))
+
 player_pos = [150, 300]
 player_radius = 20
 player_vel = [0, 0]
@@ -97,7 +99,25 @@ FRICTION = 0.98
 FONT = pygame.font.SysFont(None, 36)
 attack_font=pygame.font.SysFont("MS Gothic",48,bold=True)
 
-score = 0  # スコア変数追加
+# FONT = pygame.font.SysFont(None, 72)  # 大きなフォント
+score = 0
+
+hamehameha_active = False
+hame_timer = 0
+
+explosions = pygame.sprite.Group()
+
+class Explosion(pygame.sprite.Sprite):
+    def __init__(self, pos, image):
+        super().__init__()
+        self.image = image
+        self.rect = self.image.get_rect(center=pos)
+        self.frame = 0
+
+    def update(self):
+        self.frame += 1
+        if self.frame > 30:
+            self.kill()
 
 action_count=0 # プレイヤーの行動回数
 enemy_attack_interval=3 # 何回行動したら攻撃されるか
@@ -150,18 +170,18 @@ def draw():
     enemy.draw()
     player_hp.draw(screen, player_pos, player_radius)
 
-    # スコア表示
-    score_surf = FONT.render(f"Score: {score}", True, BLACK)
+    score_surf = pygame.font.SysFont(None, 36).render(f"Score: {score}", True, BLACK)
     screen.blit(score_surf, (20, 20))
 
-    score_text = f"Score: {score}"
-    score_surf = FONT.render(score_text, True, BLACK)
-    score_rect = score_surf.get_rect(topleft=(20, 20))
+    # 爆発描画（DOKKA-Nより後）
+    explosions.draw(screen)
+    explosions.update()
 
-    bg_rect = score_rect.inflate(10, 10)
-    pygame.draw.rect(screen, WHITE, bg_rect)
-
-    screen.blit(score_surf,score_rect)
+    # 一番手前に文字
+    if hamehameha_active:
+        text = FONT.render("DOKKA-N", True, RED)
+        text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+        screen.blit(text, text_rect)
 
     pygame.display.flip()
 
@@ -269,7 +289,6 @@ while running:
     enemy.update()
     enemy_spawn_timer += 1
 
-    # 敵の出現
     if enemy_spawn_timer >= enemy_spawn_delay and len(enemies) < max_enemies:
         x = random.randint(WIDTH // 2, WIDTH - enemy_radius)
         y = random.randint(enemy_radius, HEIGHT - enemy_radius)
@@ -297,30 +316,34 @@ while running:
             launched = True
             sound_manager.play_launch() #発射したときの効果音を鳴らす
 
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE and not hamehameha_active and score >= 5:
+                hamehameha_active = True
+                hame_timer = 30
+                explosions.add(Explosion(player_pos[:], explosion_img))
+                enemies.clear()
+                score -= 5 # スコアを消費してスキル発動
+
+    if hamehameha_active:
+        hame_timer -= 1
+        if hame_timer <= 0:
+            hamehameha_active = False
+    
+    
+    for b in enemy.p[:]:
+        if distance(player_pos, b['pos']) <= player_radius + 5:
+            player_hp.take_damage(1)
+            enemy.p.remove(b)
+
     if launched:
         player_pos[0] += player_vel[0]
         player_pos[1] += player_vel[1]
         player_vel[0] *= FRICTION
         player_vel[1] *= FRICTION
-
         keep_player_in_screen()
         enemy.check_collision(player_pos, player_radius)
 
-        # 敵に当たったら敵を消してスコアを増やす
-        for e in enemies[:]:
-            enemy_id = id(e)
-            if enemy_id not in hit_enemies and distance(player_pos, e["pos"]) <= player_radius + enemy_radius:
-                hit_enemies.add(enemy_id)
-                e["hp_obj"].take_damage()
-                if e["hp_obj"].is_dead():
-                    enemies.remove(e)
-                    score += 1
-
-        # プレイヤーに弾が当たったか
-        for b in enemy.p[:]:
-            if distance(player_pos, b['pos']) <= player_radius + 5:
-                player_hp.take_damage(1)
-                enemy.p.remove(b)
+    
         # プレイヤーの動きがほぼ止まったらターン終了
         if math.hypot(player_vel[0], player_vel[1]) < 0.5:
             launched = False
