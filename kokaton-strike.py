@@ -328,6 +328,11 @@ while running:
         hame_timer -= 1
         if hame_timer <= 0:
             hamehameha_active = False
+    
+    for b in enemy.p[:]:
+        if distance(player_pos, b['pos']) <= player_radius + 5:
+            player_hp.take_damage(1)
+            enemy.p.remove(b)
 
     if launched:
         player_pos[0] += player_vel[0]
@@ -337,23 +342,7 @@ while running:
         keep_player_in_screen()
         enemy.check_collision(player_pos, player_radius)
 
-        for e in enemies[:]:
-            enemy_id = id(e)
-            if enemy_id not in hit_enemies and distance(player_pos, e["pos"]) <= player_radius + enemy_radius:
-                hit_enemies.add(enemy_id)
-                e["hp_obj"].take_damage()
-                if e["hp_obj"].is_dead():
-                    enemies.remove(e)
-                    score += 1
-            if distance(player_pos, e) <= player_radius + enemy_radius:
-                enemies.remove(e)
-                score += 1
-
-        # プレイヤーに弾が当たったか
-        for b in enemy.p[:]:
-            if distance(player_pos, b['pos']) <= player_radius + 5:
-                player_hp.take_damage(1)
-                enemy.p.remove(b)
+    
         # プレイヤーの動きがほぼ止まったらターン終了
         if math.hypot(player_vel[0], player_vel[1]) < 0.5:
             launched = False
